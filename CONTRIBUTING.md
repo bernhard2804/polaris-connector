@@ -43,9 +43,20 @@ angemeldet hast.
   Firefox fragt dort etwa einmal am Tag nach und installiert neue Versionen
   selbst. Die `.xpi` hängt jeweils am GitHub-Release `v<Version>`.
 - Eine einmalige Handinstallation ist nötig, wenn die installierte Version
-  älter als 0.4.2 ist: `.xpi` vom Release herunterladen und in ein
-  Firefox-Fenster ziehen. Einstellungen und Rechte bleiben erhalten (gleiche
-  ID).
+  älter als 0.4.2 ist. Einstellungen und Rechte bleiben dabei erhalten
+  (gleiche ID). Die neueste Version liegt immer unter
+  https://github.com/mstio/polaris-connector/releases/latest. Herunterladen
+  und an Firefox übergeben:
+
+  ```bash
+  gh release download --repo mstio/polaris-connector --pattern '*.xpi' --dir ~/Downloads --clobber
+  firefox ~/Downloads/polaris-chatgpt-connector-*-signed.xpi   # Installation im Firefox-Fenster bestätigen
+  ```
+
+  Ohne `gh`: die `.xpi` von der Release-Seite herunterladen und in ein
+  Firefox-Fenster ziehen. Den Klick auf „Hinzufügen“ muss der Mensch selbst
+  machen. Danach in `about:addons` → Polaris prüfen: Version und unter
+  „Berechtigungen“ den Zugriff auf chatgpt.com und claude.ai.
 - Lokale Änderungen an `extension/` laufen nur **vorübergehend**
   (`about:debugging#/runtime/this-firefox` → „Temporäres Add-on laden…“ →
   `extension/manifest.json`). Nach einem Firefox-Neustart gilt wieder die
