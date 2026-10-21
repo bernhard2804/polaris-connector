@@ -225,10 +225,17 @@ Musterfirma, ABC, Falke). Pull Requests aus dem Spiegel lassen sich per
 5. Die signierte `.xpi` als `dist/polaris-chatgpt-connector-<X.Y.Z>-signed.xpi`
    committen (alte entfernen), damit sie nach einer Neuinstallation ohne
    AMO-Login bereitliegt; `install.sh` zeigt auf die neueste.
+6. `scripts/publish-public.sh --push`: prueft die entpackte `.xpi` (Version,
+   ID, Signatur, Privatsphaere), legt im oeffentlichen Spiegel das Release
+   `v<X.Y.Z>` mit der `.xpi` an und aktualisiert dort `updates.json`.
 
-Unlisted-Add-ons ohne `update_url` aktualisieren sich nicht selbst: Jede neue
-Version muss wie oben installiert werden. Erteilte Berechtigungen bleiben an
-der Extension-ID haengen und ueberstehen Updates.
+Seit 0.4.2 steht im Manifest eine `update_url`
+(`raw.githubusercontent.com/mstio/polaris-connector/main/updates.json`):
+installierte Kopien, auch bei Dritten, fragen etwa einmal am Tag nach und
+aktualisieren sich selbst. 0.4.1 und aelter kennen sie noch nicht und
+muessen einmal von Hand auf 0.4.2 gebracht werden. Die `update_url` nie
+aendern: alte Installationen fragen sonst ins Leere. Erteilte
+Berechtigungen bleiben an der Extension-ID haengen und ueberstehen Updates.
 
 ### Berechtigung fuer chatgpt.com / claude.ai
 

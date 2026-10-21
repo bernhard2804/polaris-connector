@@ -6,6 +6,7 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "polaris-chatgpt-connector@mstarchy.local",
+      "update_url": "https://raw.githubusercontent.com/mstio/polaris-connector/main/updates.json",
       "strict_min_version": "115.0",
       "data_collection_permissions": {
         "required": [
