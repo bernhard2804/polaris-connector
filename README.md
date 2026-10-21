@@ -211,6 +211,7 @@ Historie und ohne Binaerpakete; vorher laeuft dieselbe Privatsphaere-Pruefung.
 Tests und Kommentare verwenden deshalb nur erfundene Projektnamen (Kunde-A,
 Musterfirma, ABC, Falke). Pull Requests aus dem Spiegel lassen sich per
 `git format-patch | git am -3` uebernehmen (siehe Kopf des Skripts).
+Anleitung fuer Beitragende und deren KI-Agenten: `CONTRIBUTING.md`.
 
 ### Neue Version ausliefern
 

@@ -1,0 +1,13 @@
+{
+  "addons": {
+    "polaris-chatgpt-connector@mstarchy.local": {
+      "updates": [
+        {
+          "version": "0.4.2",
+          "update_link": "https://github.com/mstio/polaris-connector/releases/download/v0.4.2/polaris-chatgpt-connector-0.4.2-signed.xpi",
+          "update_hash": "sha256:e827fd5db32faa446bb39c4b5bf4a303b72cc0bc3679d3d5f2c6b228450139e7"
+        }
+      ]
+    }
+  }
+}

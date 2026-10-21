@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 
 Panel {
@@ -43,7 +44,7 @@ Panel {
   }
 
   function levelColor(level) {
-    if (level === "error") return Color.urgent
+    if (level === "error") return Commons.Color.urgent
     if (level === "warn") return "#e0a030"
     return "#4caf50"
   }
@@ -70,11 +71,11 @@ Panel {
   }
 
   function statusColor() {
-    if (root.overallLevel() === "error") return Color.urgent
+    if (root.overallLevel() === "error") return Commons.Color.urgent
     if (root.overallLevel() === "warn") return "#e0a030"
-    if (root.statusError || !root.lastResultOk || root.healthWarnings().length > 0) return Color.urgent
-    if (root.actionRunning || root.pendingUnits() > 0) return Color.accent
-    return Color.muted
+    if (root.statusError || !root.lastResultOk || root.healthWarnings().length > 0) return Commons.Color.urgent
+    if (root.actionRunning || root.pendingUnits() > 0) return Commons.Color.accent
+    return Commons.Color.muted
   }
 
   function formatCount(value, singular, plural) {
@@ -289,7 +290,7 @@ Panel {
       radius: 3
       color: root.statusColor()
       border.width: 1
-      border.color: root.bar ? root.bar.background : Color.background
+      border.color: root.bar ? root.bar.background : Commons.Color.background
       visible: root.statusError || !root.lastResultOk || root.actionRunning || root.pendingUnits() > 0
         || root.healthWarnings().length > 0 || root.overallLevel() !== "ok"
     }
@@ -332,7 +333,7 @@ Panel {
             Layout.fillWidth: true
             Text {
               text: "Health Check"
-              color: Color.foreground
+              color: Commons.Color.foreground
               font.family: Style.font.family
               font.pixelSize: Style.font.subtitle
               font.bold: true
@@ -348,7 +349,7 @@ Panel {
             Button { text: "✕"; tooltipText: "Schließen"; onClicked: root.close() }
           }
 
-          PanelSeparator { foreground: Color.foreground }
+          PanelSeparator { foreground: Commons.Color.foreground }
 
           // Eigene Bausteine mit Ampel (polaris-curator health).
           ColumnLayout {
@@ -371,7 +372,7 @@ Panel {
                   spacing: 0
                   Text {
                     text: modelData.label
-                    color: Color.foreground
+                    color: Commons.Color.foreground
                     font.family: Style.font.family
                     font.pixelSize: Style.font.body
                     font.bold: modelData.level !== "ok"
@@ -380,7 +381,7 @@ Panel {
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                     text: modelData.detail
-                    color: modelData.level === "ok" ? Color.muted : root.levelColor(modelData.level)
+                    color: modelData.level === "ok" ? Commons.Color.muted : root.levelColor(modelData.level)
                     font.family: Style.font.family
                     font.pixelSize: Style.font.caption
                   }
@@ -392,17 +393,17 @@ Panel {
               wrapMode: Text.Wrap
               visible: text.length > 0
               text: root.systemSummary()
-              color: Color.muted
+              color: Commons.Color.muted
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
             }
           }
 
-          PanelSeparator { foreground: Color.foreground }
+          PanelSeparator { foreground: Commons.Color.foreground }
 
           Text {
             text: "Polaris Curator"
-            color: Color.foreground
+            color: Commons.Color.foreground
             font.family: Style.font.family
             font.pixelSize: Style.font.body
             font.bold: true
@@ -416,7 +417,7 @@ Panel {
             visible: root.healthWarnings().length > 0
             Text {
               text: "Archivierung prüfen"
-              color: Color.urgent
+              color: Commons.Color.urgent
               font.family: Style.font.family
               font.pixelSize: Style.font.body
               font.bold: true
@@ -428,7 +429,7 @@ Panel {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
                 text: "• " + modelData
-                color: Color.urgent
+                color: Commons.Color.urgent
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
               }
@@ -443,7 +444,7 @@ Panel {
                 : root.pendingUnits() > 0
                   ? root.pendingProjects() + " von " + Number(root.summary.project_count || 0) + " Projekten offen"
                   : "Alle Projekte sind aktuell"
-              color: root.statusError ? Color.urgent : root.pendingUnits() > 0 ? Color.accent : Color.foreground
+              color: root.statusError ? Commons.Color.urgent : root.pendingUnits() > 0 ? Commons.Color.accent : Commons.Color.foreground
               font.family: Style.font.family
               font.pixelSize: Style.font.body
               font.bold: true
@@ -456,7 +457,7 @@ Panel {
                   + " · " + root.formatCount(root.summary.new_documents, "neue Inbox-Datei", "neue Inbox-Dateien")
                   + " · " + root.formatCount(root.summary.planned_llm_calls, "LLM-Aufruf", "LLM-Aufrufe")
                 : "Neue ChatGPT-Nachrichten und Dateien aus inbox/{documents,mail,notes} erscheinen hier automatisch."
-              color: Color.muted
+              color: Commons.Color.muted
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
             }
@@ -466,7 +467,7 @@ Panel {
               text: root.timerState.enabled
                 ? "Automatik aktiv" + (root.timerState.next_run ? " · nächster Lauf " + root.timerState.next_run : "")
                 : "Automatischer Timer ist nicht aktiv"
-              color: Color.muted
+              color: Commons.Color.muted
               font.family: Style.font.family
               font.pixelSize: Style.font.caption
             }
@@ -487,13 +488,13 @@ Panel {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: root.lastResult
-            color: root.lastResultOk ? Color.muted : Color.urgent
+            color: root.lastResultOk ? Commons.Color.muted : Commons.Color.urgent
             font.family: Style.font.family
             font.pixelSize: Style.font.caption
           }
 
-          PanelSeparator { foreground: Color.foreground }
-          PanelSectionHeader { text: "PROJEKTE"; foreground: Color.foreground }
+          PanelSeparator { foreground: Commons.Color.foreground }
+          PanelSectionHeader { text: "PROJEKTE"; foreground: Commons.Color.foreground }
 
           Repeater {
             model: root.projects
@@ -507,7 +508,7 @@ Panel {
                 Layout.fillWidth: true
                 Text {
                   text: modelData.name
-                  color: Color.foreground
+                  color: Commons.Color.foreground
                   font.family: Style.font.family
                   font.pixelSize: Style.font.body
                   font.bold: Number(modelData.pending_units || 0) > 0
@@ -515,7 +516,7 @@ Panel {
                 Item { Layout.fillWidth: true }
                 Text {
                   text: Number(modelData.pending_units || 0) > 0 ? modelData.pending_units + " offen" : "aktuell"
-                  color: Number(modelData.pending_units || 0) > 0 ? Color.accent : Color.muted
+                  color: Number(modelData.pending_units || 0) > 0 ? Commons.Color.accent : Commons.Color.muted
                   font.family: Style.font.family
                   font.pixelSize: Style.font.caption
                 }
@@ -525,7 +526,7 @@ Panel {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
                 text: root.projectSources(modelData)
-                color: Color.muted
+                color: Commons.Color.muted
                 font.family: Style.font.family
                 font.pixelSize: Style.font.bodySmall
               }
@@ -533,7 +534,7 @@ Panel {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
                 text: root.projectPlan(modelData)
-                color: Color.muted
+                color: Commons.Color.muted
                 font.family: Style.font.family
                 font.pixelSize: Style.font.caption
               }
@@ -563,7 +564,7 @@ Panel {
             Layout.fillWidth: true
             wrapMode: Text.Wrap
             text: "Keine gemappten Polaris-Projekte gefunden."
-            color: Color.muted
+            color: Commons.Color.muted
             font.family: Style.font.family
             font.pixelSize: Style.font.bodySmall
           }
