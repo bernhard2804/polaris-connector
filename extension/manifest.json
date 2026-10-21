@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "Polaris ChatGPT Connector",
+  "version": "0.4.1",
+  "description": "Exportiert neue Messages aus aktivierten ChatGPT- und Claude-Projekten in die lokale Polaris Inbox.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "polaris-chatgpt-connector@mstarchy.local",
+      "strict_min_version": "115.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  },
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "permissions": [
+    "downloads",
+    "storage",
+    "nativeMessaging"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://claude.ai/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*"
+      ],
+      "js": [
+        "extractor.js",
+        "chatgpt_api.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://claude.ai/*"
+      ],
+      "js": [
+        "claude.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Polaris"
+  }
+}

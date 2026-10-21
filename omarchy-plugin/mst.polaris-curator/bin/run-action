@@ -1,0 +1,92 @@
+#!/bin/bash
+# Narrow command gateway used by the widget. Project names are always passed
+# as individual argv entries; no shell command is assembled from UI data.
+set -uo pipefail
+
+CLI="$(command -v polaris-curator || true)"
+if [ -z "$CLI" ]; then
+  jq -n '{ok:false, error:"polaris-curator is not installed or not on PATH"}'
+  exit 0
+fi
+
+action="${1:-}"
+project="${2:-}"
+
+# Manuelle Laeufe als eigene systemd-Unit (seit 2026-10-12), nicht als
+# Kindprozess der Shell: ueberlebt `omarchy restart shell`, laeuft in derselben
+# Umgebung wie der Timer, und der feste Unit-Name verhindert Doppelstarts.
+# Das JSON-Ergebnis landet in $OUT; das Widget liest es nach dem Ende.
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/polaris"
+UNIT="polaris-curator-manual"
+OUT="$STATE/manual-run.json"
+
+manual_result() {
+  if [ -s "$OUT" ]; then
+    cat "$OUT"
+  else
+    jq -n --arg unit "$UNIT" '{ok:false, error:("Curator-Lauf ohne Ergebnis beendet (journalctl --user -u " + $unit + ")")}'
+  fi
+}
+
+manual_run() {
+  if systemctl --user -q is-active "$UNIT.service"; then
+    jq -n '{ok:false, error:"Ein manueller Curator-Lauf läuft bereits."}'
+    exit 0
+  fi
+  mkdir -p "$STATE"
+  rm -f -- "$OUT"
+  systemd-run --user --quiet --collect --wait --unit="$UNIT" \
+    --description="Polaris Curator (manuell aus dem Widget)" \
+    -p Wants=rclone-projekte.service -p After=rclone-projekte.service \
+    -p StandardOutput="truncate:$OUT" -p StandardError=journal \
+    -- "$CLI" "$@" >/dev/null 2>&1
+  manual_result
+}
+
+case "$action" in
+  run-project)
+    manual_run run "$project" --json
+    ;;
+  run-all)
+    manual_run run-all --json
+    ;;
+  manual-active)
+    # Exit 0, solange ein manueller Lauf aktiv ist (Widget nach Shell-Neustart).
+    systemctl --user -q is-active "$UNIT.service"
+    ;;
+  wait-manual)
+    # Nur waehrend eines laufenden Laufs: alle 5 s nachsehen, dann Ergebnis.
+    while systemctl --user -q is-active "$UNIT.service"; do sleep 5; done
+    manual_result
+    ;;
+  open)
+    kind="${3:-folder}"
+    status="$($CLI status "$project" --json 2>/dev/null)"
+    path="$(jq -r '.path // empty' <<<"$status" 2>/dev/null)"
+    if [ -z "$path" ] || [ ! -d "$path" ]; then
+      jq -n --arg project "$project" '{ok:false, error:("Project not found: " + $project)}'
+      exit 0
+    fi
+
+    case "$kind" in
+      knowledge) target="$path/knowledge.md" ;;
+      decisions) target="$path/decisions.md" ;;
+      open-loops) target="$path/open-loops.md" ;;
+      folder) target="$path" ;;
+      *) jq -n --arg kind "$kind" '{ok:false, error:("Unknown target: " + $kind)}'; exit 0 ;;
+    esac
+
+    # An uninitialised curated file is not an error: open the project folder
+    # so the user still lands in the right place.
+    [ -e "$target" ] || target="$path"
+    if ! command -v xdg-open >/dev/null 2>&1; then
+      jq -n '{ok:false, error:"xdg-open is not available"}'
+      exit 0
+    fi
+    setsid -f xdg-open "$target" >/dev/null 2>&1
+    jq -n --arg target "$target" '{ok:true, opened:$target}'
+    ;;
+  *)
+    jq -n --arg action "$action" '{ok:false, error:("Unknown action: " + $action)}'
+    ;;
+esac

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Native-Messaging-Host der Polaris Bridge. Wird von Firefox gestartet
+# (siehe bridge/install-native-host.sh), nicht manuell.
+set -euo pipefail
+REAL_SOURCE="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "${REAL_SOURCE}")/.." && pwd)"
+exec env PYTHONPATH="${SCRIPT_DIR}:${PYTHONPATH:-}" python3 -m polaris.native_host

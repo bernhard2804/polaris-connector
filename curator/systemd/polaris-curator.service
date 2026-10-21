@@ -1,0 +1,27 @@
+[Unit]
+Description=Polaris Curator - kondensiert neue ChatGPT-Messages und Projektdokumente zu Projektwissen
+# Die Projektordner liegen auf dem rclone-Mount ~/Projekte. Beim Nachholen
+# eines verpassten Laufs direkt nach dem Hochfahren startete der Curator
+# sonst vor dem Mount und fand keine Projekte (2026-09-20). Fehlt die Unit
+# auf einem anderen Rechner, sind Wants/After wirkungslos.
+Wants=rclone-projekte.service
+After=rclone-projekte.service
+# Neuversuch nur bei voruebergehenden Fehlern (Exit 75: kein Netz/LLM,
+# Projektordner nicht erreichbar) alle 20 min, bis zu ~8 h lang. Vorher 4
+# Versuche in 3 h: ein Codex-Nutzungslimit von mehreren Stunden liess die
+# Unit per Start-Limit auf "failed" fallen, der Rueckstand wartete einen
+# ganzen Tag (2026-09-29). Nach ~8 h erfolglos: "failed", Health meldet es.
+StartLimitIntervalSec=12h
+StartLimitBurst=25
+
+[Service]
+Type=oneshot
+# Nach Resume/Boot bis zu 5 Minuten auf eine Netzverbindung warten. Bewusst
+# nicht blockierend ("-"): ohne Netz endet der Lauf mit Exit 75 (LLM nicht
+# erreichbar) und wird per Restart spaeter wiederholt; Laeufe ohne neue
+# Quellen brauchen gar kein Netz.
+ExecStartPre=-/usr/bin/nm-online -q -t 300
+ExecStart=%h/.local/bin/polaris-curator run-all
+Restart=on-failure
+RestartPreventExitStatus=1
+RestartSec=20min

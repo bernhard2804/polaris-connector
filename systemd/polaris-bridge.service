@@ -1,0 +1,15 @@
+[Unit]
+Description=Polaris Bridge - verarbeitet die Polaris Inbox einmalig
+# Schreibt in die Projektordner auf dem rclone-Mount ~/Projekte (kritische
+# Regel im Maschinengedaechtnis). Fehlt der Ordner trotzdem, bleibt die Datei
+# fuer einen neuen Versuch liegen ("retry", seit 2026-09-29).
+Wants=rclone-projekte.service
+After=rclone-projekte.service
+# Keine Startbegrenzung: jeder Lauf ist kurz und beendet sich bei belegter
+# Sperre sofort. Mit dem Standard-Limit legten viele Inbox-Ereignisse in
+# kurzer Zeit Service und Path-Unit still (2026-09-29, 18:37).
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/polaris process

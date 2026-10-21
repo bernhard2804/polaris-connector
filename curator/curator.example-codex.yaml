@@ -1,0 +1,24 @@
+# Vorlage fuer ~/.config/polaris/curator.yaml (install.sh legt sie an, wenn
+# noch keine existiert). Runtime: Codex CLI (`codex login`). Modellnamen
+# veralten - bei Bedarf mit dem aktuellen Codex-Katalog abgleichen und mit
+# `polaris-curator llm-check --call` pruefen.
+provider: openai
+runtime: codex
+model: gpt-6-astra
+fallback_model: gpt-5.6-sol
+# Ersatz, wenn Codex nicht erreichbar ist (Limit/Ausfall); null = aus.
+# Braucht die Claude-Code-CLI (`claude`, angemeldet).
+claude_fallback_model: null
+# Unabhaengige Pruefung neuer Eintraege durch Claude; null = aus.
+reviewer_model: null
+permit_more_expensive_fallback: false
+llm_timeout_seconds: 1200
+reasoning_effort: medium
+budget:
+  max_batches_per_run: 3
+  max_llm_calls_per_run: 3
+  max_messages_per_batch: 40
+  max_input_chars_per_batch: 100000
+  max_total_input_chars_per_run: 250000
+context:
+  max_curated_context_chars: 200000

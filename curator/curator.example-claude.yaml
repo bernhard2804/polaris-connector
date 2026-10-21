@@ -1,0 +1,23 @@
+# Vorlage fuer ~/.config/polaris/curator.yaml auf Rechnern ohne Codex
+# (install.sh --runtime claude). Runtime: Claude-Code-CLI (`claude`, einmal
+# interaktiv anmelden). Bilder aus Mail-Anhaengen kann dieser Weg nicht
+# mitgeben - nur deren Text wird kuratiert. Pruefen mit
+# `polaris-curator llm-check --call`.
+provider: anthropic
+runtime: claude
+model: opus
+# Ersatz bei Ausfall/Limit, ebenfalls ueber Claude; null = aus.
+fallback_model: sonnet
+claude_fallback_model: null
+# Pruefung durch dasselbe Modell waere nicht unabhaengig -> aus.
+reviewer_model: null
+permit_more_expensive_fallback: false
+llm_timeout_seconds: 1200
+budget:
+  max_batches_per_run: 3
+  max_llm_calls_per_run: 3
+  max_messages_per_batch: 40
+  max_input_chars_per_batch: 100000
+  max_total_input_chars_per_run: 250000
+context:
+  max_curated_context_chars: 200000

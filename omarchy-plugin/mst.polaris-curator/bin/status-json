@@ -1,0 +1,58 @@
+#!/bin/bash
+# Combine the Curator's structured status with the user timer state in one
+# process invocation for the QML widget.
+set -uo pipefail
+
+CLI="$(command -v polaris-curator || true)"
+if [ -z "$CLI" ]; then
+  jq -n '{installed:false, error:"polaris-curator is not installed or not on PATH"}'
+  exit 0
+fi
+
+payload="$("$CLI" status-all --json 2>/dev/null)"
+code=$?
+if [ "$code" -ne 0 ] || ! jq -e . >/dev/null 2>&1 <<<"$payload"; then
+  jq -n --arg error "${payload:-Curator status could not be read}" \
+    '{installed:true, error:$error, projects:[], summary:{}}'
+  exit 0
+fi
+
+timer_enabled=false
+timer_active=false
+next_run=""
+last_result=""
+
+if systemctl --user is-enabled --quiet polaris-curator.timer 2>/dev/null; then
+  timer_enabled=true
+fi
+if systemctl --user is-active --quiet polaris-curator.timer 2>/dev/null; then
+  timer_active=true
+fi
+next_run="$(systemctl --user show polaris-curator.timer \
+  --property=NextElapseUSecRealtime --value 2>/dev/null || true)"
+last_result="$(systemctl --user show polaris-curator.service \
+  --property=Result --value 2>/dev/null || true)"
+
+# Health-Check der eigenen Bausteine (polaris-curator health, seit 2026-09-25).
+system_health="$("$CLI" health --json 2>/dev/null)"
+if ! jq -e . >/dev/null 2>&1 <<<"$system_health"; then
+  # Absturz des Checks selbst ist rot: er koennte einen roten Zustand verdecken.
+  system_health='{"level":"error","components":[{"id":"health","label":"Health-Check","level":"error","detail":"konnte nicht ermittelt werden – polaris-curator health im Terminal ausführen"}],"system":[]}'
+fi
+
+jq \
+  --argjson systemHealth "$system_health" \
+  --argjson timerEnabled "$timer_enabled" \
+  --argjson timerActive "$timer_active" \
+  --arg nextRun "$next_run" \
+  --arg lastResult "$last_result" \
+  '. + {
+    installed: true,
+    system_health: $systemHealth,
+    timer: {
+      enabled: $timerEnabled,
+      active: $timerActive,
+      next_run: $nextRun,
+      last_result: $lastResult
+    }
+  }' <<<"$payload"

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "mst.polaris-curator",
+  "name": "Health Check",
+  "version": "0.2.0",
+  "author": "Matthias Stache",
+  "license": "MIT",
+  "description": "Health check of the self-built pieces on this machine (Polaris archive, extension, native host, curator, model CLI, backup, project folders) plus Polaris Curator status and runs.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "PolarisCurator.qml"
+  },
+  "barWidget": {
+    "displayName": "Health Check",
+    "description": "Health of self-built services and Polaris Curator actions",
+    "category": "Productivity",
+    "allowMultiple": false,
+    "defaultSection": "center"
+  }
+}

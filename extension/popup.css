@@ -1,0 +1,115 @@
+body {
+  font-family: -apple-system, system-ui, sans-serif;
+  width: 260px;
+  padding: 12px;
+  margin: 0;
+}
+h1 {
+  font-size: 15px;
+  margin: 0 0 10px 0;
+}
+.hidden {
+  display: none;
+}
+.muted {
+  color: #777;
+  font-size: 12px;
+}
+.field {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.label {
+  color: #555;
+}
+.value {
+  font-weight: 600;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+button {
+  width: 100%;
+  padding: 6px 0;
+  cursor: pointer;
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 18px;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #ccc;
+  transition: 0.15s;
+  border-radius: 18px;
+}
+.slider::before {
+  position: absolute;
+  content: '';
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: 0.15s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: #2f7d32;
+}
+input:checked + .slider::before {
+  transform: translateX(16px);
+}
+
+.warning {
+  background: #fff4e0;
+  border: 1px solid #e0a030;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+.warning p {
+  margin: 0 0 6px 0;
+}
+
+.mapping {
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.mapping-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.mapping-row select {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 4px;
+  font-size: 13px;
+}
+.mapping-row button {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 4px 10px;
+}
+.warning-text {
+  color: #b06a00;
+  font-size: 12px;
+  margin: 4px 0;
+}

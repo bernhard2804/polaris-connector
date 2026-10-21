@@ -1,0 +1,12 @@
+[Unit]
+Description=Polaris: Maschinengedaechtnis in den Projektordner spiegeln
+# Ziel liegt typischerweise auf dem rclone-Laufwerk; fehlt es, endet der Lauf
+# mit 75 und der naechste Timer-Lauf holt nach.
+Wants=rclone-projekte.service
+After=rclone-projekte.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/polaris-memory-mirror
+SuccessExitStatus=75
+Nice=10

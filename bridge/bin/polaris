@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Duenner Wrapper: fuehrt die Polaris Bridge CLI aus, ohne dass ein
+# separates pip-Install/venv noetig ist (nur stdlib + PyYAML, das auf
+# diesem System bereits als Systempaket installiert ist).
+set -euo pipefail
+REAL_SOURCE="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "${REAL_SOURCE}")/.." && pwd)"
+exec env PYTHONPATH="${SCRIPT_DIR}:${PYTHONPATH:-}" python3 -m polaris.cli "$@"

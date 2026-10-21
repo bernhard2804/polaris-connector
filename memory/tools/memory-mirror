@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Spiegelt das Maschinengedaechtnis einseitig in einen Projektordner, z. B. auf
+# Google Drive (seit 2026-10-08). Die lokale Fassung unter ~/.config/ai-agents
+# bleibt die Arbeitskopie; faellt das Laufwerk aus, laeuft der Rechner weiter
+# und der naechste Lauf holt den Spiegel nach.
+#
+#   memory-mirror [--dry-run]
+#
+# Ziel: `memory_mirror:` in ~/.config/polaris/config.yaml (z. B.
+# ~/Projekte/Polaris/Maschinengedaechtnis). Ohne Eintrag tut der Befehl nichts.
+# Der uebergeordnete Ordner (der Projektordner) muss existieren; er wird nie
+# angelegt, damit bei nicht eingehaengtem Laufwerk nichts unter dem Mountpunkt
+# landet. Geloeschte oder ueberschriebene Dateien bleiben im Spiegel unter
+# .alt/<Datum>/ erhalten.
+#
+# Exit: 0 = gespiegelt oder nicht eingerichtet, 75 = Ziel gerade nicht
+# erreichbar (systemd wertet das als Erfolg, der Health Check zeigt das Alter).
+set -euo pipefail
+
+SRC="${POLARIS_MEMORY_DIR:-$HOME/.config/ai-agents}"
+CONFIG="$HOME/.config/polaris/config.yaml"
+STATE_DIR="$HOME/.local/state/polaris"
+STATE="$STATE_DIR/memory-mirror.json"
+DRY=()
+[ "${1:-}" = "--dry-run" ] && DRY=(--dry-run --itemize-changes)
+
+target="$(python3 - "$CONFIG" <<'EOF'
+import os, sys
+try:
+    import yaml
+    cfg = yaml.safe_load(open(sys.argv[1])) or {}
+except (OSError, ImportError, ValueError):
+    cfg = {}
+value = cfg.get("memory_mirror") or ""
+print(os.path.expanduser(str(value)) if value else "")
+EOF
+)"
+
+write_state() {  # write_state <ok|unreachable> <detail>
+  [ ${#DRY[@]} -eq 0 ] || return 0
+  mkdir -p "$STATE_DIR"
+  local prev_ok=""
+  [ -f "$STATE" ] && prev_ok="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("last_success") or "")' "$STATE" 2>/dev/null || true)"
+  python3 - "$STATE" "$1" "$2" "$target" "$prev_ok" <<'EOF'
+import json, sys
+from datetime import datetime, timezone
+path, result, detail, target, prev_ok = sys.argv[1:6]
+now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+data = {"target": target, "last_run": now, "last_result": result, "detail": detail,
+        "last_success": now if result == "ok" else (prev_ok or None)}
+tmp = path + ".tmp"
+with open(tmp, "w") as fh:
+    json.dump(data, fh, indent=2)
+import os
+os.replace(tmp, path)
+EOF
+}
+
+if [ -z "$target" ]; then
+  echo "memory-mirror: kein Ziel (memory_mirror in $CONFIG) - nichts zu tun"
+  exit 0
+fi
+# Nur ein Lauf zur Zeit: Timer (enable --now) und install.sh starteten sonst
+# parallel, und der zweite Lauf legte die frischen Dateien des ersten als
+# "alte Fassung" nach .alt/ (2026-10-08).
+mkdir -p "$STATE_DIR"
+exec 9>"$STATE_DIR/memory-mirror.lock"
+if ! flock -n 9; then
+  echo "memory-mirror: laeuft bereits - nichts zu tun"
+  exit 0
+fi
+command -v rsync >/dev/null || { echo "memory-mirror: rsync fehlt (sudo pacman -S rsync)" >&2; exit 1; }
+if [ ! -d "$SRC" ]; then
+  echo "memory-mirror: $SRC fehlt" >&2
+  exit 1
+fi
+parent="$(dirname -- "$target")"
+if [ ! -d "$parent" ]; then
+  echo "memory-mirror: $parent nicht erreichbar (Laufwerk eingehaengt?) - spaeter erneut" >&2
+  write_state unreachable "$parent nicht erreichbar"
+  exit 75
+fi
+
+# Schutz nach einer Wiederherstellung: Bringt ein Snapshot ein aelteres
+# Gedaechtnis zurueck, als im Spiegel liegt, wuerde der Lauf den neueren Stand
+# ueberschreiben. Dann nichts tun und melden (rsync -t uebernimmt die
+# Aenderungszeiten, im Normalfall sind beide Seiten gleich alt).
+newest() { find "$1" -path "$1/.alt" -prune -o -type f -printf '%T@\n' 2>/dev/null | sort -n | tail -1 | cut -d. -f1; }
+if [ -d "$target" ] && [ -z "${POLARIS_MIRROR_FORCE:-}" ]; then
+  src_new="$(newest "$SRC")"; dst_new="$(newest "$target")"
+  if [ -n "$dst_new" ] && [ "${dst_new:-0}" -gt "$(( ${src_new:-0} + 60 ))" ]; then
+    echo "memory-mirror: Spiegel ist neuer als $SRC ($(date -d "@$dst_new" '+%F %H:%M') gegen $(date -d "@${src_new:-0}" '+%F %H:%M'))." >&2
+    echo "  Erst zurueckholen: rsync -rlt --exclude=.alt/ '$target/' '$SRC/'" >&2
+    echo "  Oder lokalen Stand bewusst durchsetzen: POLARIS_MIRROR_FORCE=1 polaris-memory-mirror" >&2
+    write_state mirror_newer "Spiegel neuer als lokal - erst zurueckholen"
+    exit 1
+  fi
+fi
+
+stamp="$(date +%Y-%m-%d)"
+# -rlt statt -a: Rechte/Eigentuemer lassen sich auf FUSE-Laufwerken nicht setzen.
+# --checksum: Zeitstempel auf FUSE sind grob; 1-2 MB pruefen kostet nichts.
+rsync -rlt --checksum --delete --filter='P .alt/' --exclude='.alt/' \
+  --backup --backup-dir=".alt/$stamp" "${DRY[@]}" -- "$SRC/" "$target/"
+files="$(find "$SRC" -type f | wc -l)"
+write_state ok "$files Dateien"
+[ ${#DRY[@]} -eq 0 ] && echo "memory-mirror: $files Dateien nach $target gespiegelt"
+exit 0

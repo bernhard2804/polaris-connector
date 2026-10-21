@@ -1,0 +1,43 @@
+# Vorlage fuer ~/.config/polaris/curator.yaml mit einer beliebigen
+# Agenten-CLI (runtime: command, seit 2026-10-07). Pruefen mit
+# `polaris-curator llm-check --call`.
+#
+# command: Argumentliste. Platzhalter: {model} {prompt_file} {schema_file}
+# {schema_json}. Ohne {prompt_file} kommt der Prompt ueber stdin. Prompts
+# koennen >100 KB gross sein - nie als einzelnes Argument uebergeben
+# (Linux-Grenze 128 KB je Argument), sondern ueber stdin oder {prompt_file}.
+# Ohne {schema_file}/{schema_json} haengt der Curator das JSON-Schema an den
+# Prompt an. Die Antwort prueft der Curator in jedem Fall selbst.
+# command_output_key: Feld einer JSON-Huelle mit der eigentlichen Antwort.
+#
+# SICHERHEIT: Die Chats sind fremder Inhalt. Die CLI laeuft in einem leeren
+# Arbeitsordner; Shell- und Schreibwerkzeuge ueber ihre eigenen Flags
+# abschalten bzw. einen Nur-Lesen-Modus waehlen.
+provider: other
+runtime: command
+model: ""
+fallback_model: null
+
+# Auf dem Entwicklungsrechner getestet (2026-10-07): Gemini/Antigravity-CLI im Planmodus
+# (keine Aenderungen), liest den Prompt aus der Datei im Arbeitsordner.
+command: ["gemini", "--output-format", "json", "--mode", "plan", "--print",
+          "Lies die Datei {prompt_file} vollständig und befolge die Anweisungen darin. Gib nur das verlangte JSON aus."]
+command_output_key: response
+
+# Weitere Kandidaten (Syntax laut deren --help, mit diesem Curator NICHT
+# getestet - Werkzeug-/Rechte-Flags selbst pruefen):
+#   opencode:  ["opencode", "run", "--model", "{model}"]           (Prompt ueber stdin)
+#   crush:     ["crush", "run"]                                    (Prompt ueber stdin)
+#   grok:      ["grok", "agent", "--json-schema", "{schema_json}"]
+
+claude_fallback_model: null
+reviewer_model: null
+llm_timeout_seconds: 1200
+budget:
+  max_batches_per_run: 3
+  max_llm_calls_per_run: 3
+  max_messages_per_batch: 40
+  max_input_chars_per_batch: 100000
+  max_total_input_chars_per_run: 250000
+context:
+  max_curated_context_chars: 200000

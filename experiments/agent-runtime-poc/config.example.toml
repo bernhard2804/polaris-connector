@@ -1,0 +1,51 @@
+[runtime]
+workspace = "fixture-workspace"
+state_dir = ".poc-state"
+agent_role = "project-reader"
+permissions = ["read-only"]
+
+[profiles.offline]
+model_class = "cheap/local"
+provider = "offline"
+model = "function:polaris-deterministic"
+reports_usage = false
+reports_cache_usage = false
+
+[profiles.ollama]
+model_class = "cheap/local"
+provider = "ollama"
+model = "ollama:qwen3:8b"
+base_url = "http://127.0.0.1:11434/v1"
+reports_usage = true
+reports_cache_usage = false
+
+[profiles.openai]
+model_class = "standard"
+provider = "openai"
+model = "openai:gpt-5-mini"
+reports_usage = true
+reports_cache_usage = true
+
+[profiles.anthropic]
+model_class = "strong"
+provider = "anthropic"
+model = "anthropic:claude-sonnet-4-5"
+reports_usage = true
+reports_cache_usage = true
+
+[profiles.deepseek]
+model_class = "standard"
+provider = "deepseek"
+model = "deepseek:deepseek-chat"
+reports_usage = true
+reports_cache_usage = true
+
+# Generic OpenAI-compatible endpoint example. The secret itself stays in the environment.
+[profiles.openai_compatible]
+model_class = "standard"
+provider = "openai-compatible"
+model = "openai-chat:replace-me"
+base_url = "http://127.0.0.1:8000/v1"
+api_key_env = "POLARIS_COMPAT_API_KEY"
+reports_usage = true
+reports_cache_usage = false

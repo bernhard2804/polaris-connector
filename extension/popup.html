@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Polaris</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1>Polaris</h1>
+
+    <div id="permission-warning" class="warning hidden">
+      <p>Polaris hat keinen dauerhaften Zugriff auf chatgpt.com bzw. claude.ai
+        und exportiert deshalb nur nach einem Klick auf dieses Symbol.</p>
+      <button id="grant-permission">Zugriff dauerhaft erlauben</button>
+    </div>
+
+    <div id="no-project" class="hidden">
+      <p class="muted">Kein ChatGPT- oder Claude-Projekt auf dieser Seite erkannt.</p>
+    </div>
+
+    <div id="project-panel" class="hidden">
+      <div class="field">
+        <span class="label">Project</span>
+        <span id="project-name" class="value">-</span>
+      </div>
+
+      <div class="row">
+        <span>Sync project</span>
+        <label class="switch">
+          <input type="checkbox" id="sync-toggle" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="row">
+        <span>Exclude this chat</span>
+        <label class="switch">
+          <input type="checkbox" id="exclude-toggle" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div id="mapping-panel" class="mapping">
+        <span class="label">Ablageordner</span>
+        <p id="mapping-hint" class="warning-text hidden"></p>
+        <div class="mapping-row">
+          <select id="folder-select"></select>
+          <button id="map-button">Zuordnen</button>
+        </div>
+        <p id="mapping-status" class="muted"></p>
+      </div>
+
+      <div class="field">
+        <span class="label">Last export</span>
+        <span id="last-export" class="value">-</span>
+      </div>
+
+      <button id="sync-now">Sync now</button>
+      <p id="sync-status" class="muted"></p>
+    </div>
+
+    <div id="api-panel" class="mapping">
+      <div class="row">
+        <span>ChatGPT über Schnittstelle lesen</span>
+        <label class="switch">
+          <input type="checkbox" id="api-toggle" />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <p id="api-status" class="muted"></p>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

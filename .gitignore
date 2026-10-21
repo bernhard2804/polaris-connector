@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Alte AMO-Upload-ZIPs (README: Extension paketieren); Stand bleibt in der git-Historie
+/polaris-chatgpt-connector-v*.zip

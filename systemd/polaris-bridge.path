@@ -1,0 +1,9 @@
+[Unit]
+Description=Beobachtet die Polaris Inbox und startet die Bridge bei neuen Dateien
+
+[Path]
+PathModified=%h/Downloads/polaris-inbox
+Unit=polaris-bridge.service
+
+[Install]
+WantedBy=default.target

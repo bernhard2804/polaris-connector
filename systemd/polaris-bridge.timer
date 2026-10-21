@@ -1,0 +1,15 @@
+[Unit]
+Description=Polaris Bridge - Sicherheitsnetz: Inbox und Wartendes alle 10 Minuten verarbeiten
+
+# Die Path-Unit reagiert nur auf neue Inbox-Dateien. Bekam ein Aufrufer die
+# Sperre nicht (paralleler Lauf, Import) oder scheiterte das Ablegen
+# voruebergehend (Drive-Mount weg -> "retry"), lag die Datei bis zum naechsten
+# Inbox-Ereignis. Dieser Timer holt das nach (seit 2026-09-29).
+
+[Timer]
+OnBootSec=5min
+OnUnitInactiveSec=10min
+Unit=polaris-bridge.service
+
+[Install]
+WantedBy=timers.target
