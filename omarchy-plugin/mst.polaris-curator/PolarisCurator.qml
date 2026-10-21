@@ -271,7 +271,7 @@ Panel {
     id: icon
     bar: root.bar
     text: "\uf21e"
-    fixedWidth: root.bar ? root.bar.barSize : Style.bar.sizeHorizontal
+    fixedWidth: Style.bar.iconSlot
     tooltipText: !root.installed ? "Polaris Curator ist nicht installiert"
       : root.firstProblem() ? root.firstProblem().label + ": " + root.firstProblem().detail
       : root.healthWarnings().length > 0 ? "Polaris: " + root.healthWarnings()[0]

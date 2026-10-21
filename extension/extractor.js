@@ -9,13 +9,10 @@
  * eines Assistant-Turns, eingebettet in ein ChatGPT-Project "Firma",
  * eingesammelt 2026-09-12):
  *
- *   - Jede Nachricht liegt in einem Element mit
- *     [data-testid^="conversation-turn-"] (Turn-Container, ein <section>;
- *     traegt zusaetzlich data-turn="assistant"|"user", ungenutzt da die
- *     innere Rolle unten zuverlaessiger ist).
- *   - Innerhalb davon liegt ein <div> mit sowohl [data-message-id] als
- *     auch [data-message-author-role] (role: "user" | "assistant" | ...).
- *     Bestaetigt exakt wie angenommen.
+ *   - Das damalige Nachrichten-Markup (conversation-turn-*,
+ *     data-message-author-role) gibt es seit 2026-09-25 nicht mehr; der
+ *     Zweig dafuer ist seit 0.4.3 entfernt. Aktueller Aufbau: bei
+ *     UNIT_SELECTOR unten.
  *   - Ist die Conversation Teil eines Projects, lautet die URL
  *     /g/g-p-<opaque-id>/c/<conversation-id> (NICHT nur /c/<id> wie bei
  *     projektlosen Chats). getConversationId() sucht /c/([...]) im
@@ -50,8 +47,6 @@
  */
 
 const PolarisExtractor = (() => {
-  const TURN_SELECTOR = '[data-testid^="conversation-turn-"]';
-  const MESSAGE_SELECTOR = '[data-message-id][data-message-author-role]';
   const STREAMING_SELECTOR =
     'button[data-testid="stop-button"], button[aria-label*="stop generating" i], button[aria-label*="stop streaming" i]';
   // aria-label statt Ort im Dokument: der Header-Link ist nur beim
@@ -153,18 +148,6 @@ const PolarisExtractor = (() => {
   const UNIT_SELECTOR = '[data-chatgpt-search-unit-key], [data-content-search-unit-key]';
   const ROLES = new Set(['user', 'assistant']);
 
-  function getLegacyTurns() {
-    const turns = [];
-    document.querySelectorAll(TURN_SELECTOR).forEach((turnEl) => {
-      const msgEl = turnEl.querySelector(MESSAGE_SELECTOR);
-      if (!msgEl) return;
-      const role = msgEl.getAttribute('data-message-author-role');
-      const nativeId = msgEl.getAttribute('data-message-id');
-      turns.push({ role, nativeId, node: msgEl });
-    });
-    return turns;
-  }
-
   function getUnitTurns() {
     const turns = [];
     document.querySelectorAll(UNIT_SELECTOR).forEach((unit) => {
@@ -217,8 +200,7 @@ const PolarisExtractor = (() => {
   // synchrones Layout und war bei jedem DOM-Mutation-Tick fuer ALLE Turns
   // spuerbar teuer (Tipp-Aussetzer, 2026-09-12 vom Nutzer beobachtet).
   function getTurns() {
-    const legacy = getLegacyTurns();
-    return legacy.length ? legacy : getUnitTurns();
+    return getUnitTurns();
   }
 
   function getTurnContent(node) {
@@ -226,8 +208,6 @@ const PolarisExtractor = (() => {
   }
 
   return {
-    TURN_SELECTOR,
-    MESSAGE_SELECTOR,
     STREAMING_SELECTOR,
     PROJECT_LINK_SELECTOR,
     getConversationId,

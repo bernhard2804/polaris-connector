@@ -60,14 +60,14 @@ test('Aktuelles Markup: Rolle, erste ID, Text, keine doppelten verschachtelten U
   assert.equal(X.getTurnContent(turns[0].node), 'Frage');
 });
 
-test('Altes Markup hat Vorrang, wenn vorhanden', () => {
+test('Altes Markup (bis 2026-09-25) wird nicht mehr gelesen', () => {
   const body = h('body', {}, [
     h('section', { 'data-testid': 'conversation-turn-1' }, [
       h('div', { 'data-message-id': 'm1', 'data-message-author-role': 'user' }, [], { text: 'alt' }),
     ]),
     unit('user', 'u1', 'neu'),
   ]);
-  assert.deepEqual(plain(extractor('/g/g-p-1/c/c1', body).getTurns().map((t) => t.nativeId)), ['m1']);
+  assert.deepEqual(plain(extractor('/g/g-p-1/c/c1', body).getTurns().map((t) => t.nativeId)), ['u1']);
 });
 
 test('Dateinamen hochgeladener Anhaenge, keine anderen Titel', () => {

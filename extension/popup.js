@@ -35,6 +35,23 @@ function renderApi(context, enabled) {
   document.getElementById('api-status').textContent = text;
 }
 
+// Claude meldet das Projekt erst aus einer Unterhaltung (/chat/<id>); auf der
+// Projektuebersicht /project/<id> gibt es deshalb noch keinen Kontext.
+// tab.url fehlt ohne Host-Berechtigung, dann bleibt die allgemeine Meldung.
+function noProjectText(url, context) {
+  let path = '';
+  try {
+    if (url && new URL(url).hostname === 'claude.ai') path = new URL(url).pathname;
+  } catch (e) { /* keine gueltige URL */ }
+  if (/^\/project\/[0-9a-f-]{36}/.test(path)) {
+    return 'Projektübersicht – Polaris erfasst erst, wenn ein Chat in diesem Projekt geöffnet ist.';
+  }
+  if (context && context.conversationId) {
+    return 'Dieser Chat gehört zu keinem Projekt und wird nicht archiviert.';
+  }
+  return 'Kein ChatGPT- oder Claude-Projekt auf dieser Seite erkannt.';
+}
+
 async function render() {
   const [tab] = await api().tabs.query({ active: true, currentWindow: true });
   if (!tab) return;
@@ -46,6 +63,7 @@ async function render() {
   renderApi(context, chatgptApi);
 
   if (!context || !context.projectId) {
+    document.getElementById('no-project-text').textContent = noProjectText(tab.url, context);
     document.getElementById('no-project').classList.remove('hidden');
     document.getElementById('project-panel').classList.add('hidden');
     return;
