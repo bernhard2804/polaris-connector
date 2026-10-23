@@ -1,9 +1,10 @@
 [Unit]
 Description=Polaris: Maschinengedaechtnis in den Projektordner spiegeln
-# Ziel liegt typischerweise auf dem rclone-Laufwerk; fehlt es, endet der Lauf
-# mit 75 und der naechste Timer-Lauf holt nach.
-Wants=rclone-projekte.service
-After=rclone-projekte.service
+# Ziel liegt typischerweise im Projektordner; fehlt es, endet der Lauf mit 75
+# und der naechste Timer-Lauf holt nach.
+# Liegen die Projektordner auf einem Laufwerk, das ein eigener Dienst einhaengt
+# (z. B. rclone), legt install.sh Wants=/After= darauf als Drop-in
+# <unit>.d/polaris-storage.conf an (--storage-unit; seit 2026-10-23).
 
 [Service]
 Type=oneshot

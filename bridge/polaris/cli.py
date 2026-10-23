@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import difflib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -322,6 +323,14 @@ def cmd_process(_args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_update(args: argparse.Namespace) -> int:
+    # Die Logik liegt in update.sh neben install.sh (git + install.sh).
+    script = Path(__file__).resolve().parents[2] / "update.sh"
+    argv = [str(script)] + (["--yes"] if args.yes else []) + (["--check"] if args.check else [])
+    os.execv(str(script), argv)
+    return 2  # nicht erreicht
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="polaris")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -354,6 +363,10 @@ def build_parser() -> argparse.ArgumentParser:
     unmap_p.set_defaults(func=cmd_unmap)
 
     sub.add_parser("process", help="Inbox einmalig verarbeiten").set_defaults(func=cmd_process)
+    upd = sub.add_parser("update", help="Polaris aktualisieren (git-Checkout, wie omarchy plugin update)")
+    upd.add_argument("--yes", "-y", action="store_true", help="ohne Nachfrage")
+    upd.add_argument("--check", action="store_true", help="nur nachsehen (Exit 0 = Update da, 1 = aktuell)")
+    upd.set_defaults(func=cmd_update)
 
     held = sub.add_parser("held-back", help="Chats mit noch nicht uebernommener letzter Antwort")
     held.add_argument("--clear", metavar="SCHLUESSEL|all", help="Eintrag entfernen (z. B. geloeschter Chat)")

@@ -1,11 +1,10 @@
 [Unit]
 Description=Polaris Curator - kondensiert neue ChatGPT-Messages und Projektdokumente zu Projektwissen
-# Die Projektordner liegen auf dem rclone-Mount ~/Projekte. Beim Nachholen
-# eines verpassten Laufs direkt nach dem Hochfahren startete der Curator
-# sonst vor dem Mount und fand keine Projekte (2026-09-20). Fehlt die Unit
-# auf einem anderen Rechner, sind Wants/After wirkungslos.
-Wants=rclone-projekte.service
-After=rclone-projekte.service
+# Beim Nachholen eines verpassten Laufs direkt nach dem Hochfahren startete
+# der Curator sonst vor dem Laufwerk und fand keine Projekte (2026-09-20).
+# Liegen die Projektordner auf einem Laufwerk, das ein eigener Dienst einhaengt
+# (z. B. rclone), legt install.sh Wants=/After= darauf als Drop-in
+# <unit>.d/polaris-storage.conf an (--storage-unit; seit 2026-10-23).
 # Neuversuch nur bei voruebergehenden Fehlern (Exit 75: kein Netz/LLM,
 # Projektordner nicht erreichbar) alle 20 min, bis zu ~8 h lang. Vorher 4
 # Versuche in 3 h: ein Codex-Nutzungslimit von mehreren Stunden liess die

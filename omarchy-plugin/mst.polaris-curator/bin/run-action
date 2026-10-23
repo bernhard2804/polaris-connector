@@ -35,9 +35,13 @@ manual_run() {
   fi
   mkdir -p "$STATE"
   rm -f -- "$OUT"
+  # Laufwerks-Dienst wie beim Timer-Lauf (Drop-in von install.sh, falls vorhanden)
+  local storage props=()
+  storage="$(sed -n 's/^Wants=//p' "$HOME/.config/systemd/user/polaris-curator.service.d/polaris-storage.conf" 2>/dev/null | head -1)"
+  [ -n "$storage" ] && props=(-p "Wants=$storage" -p "After=$storage")
   systemd-run --user --quiet --collect --wait --unit="$UNIT" \
     --description="Polaris Curator (manuell aus dem Widget)" \
-    -p Wants=rclone-projekte.service -p After=rclone-projekte.service \
+    "${props[@]}" \
     -p StandardOutput="truncate:$OUT" -p StandardError=journal \
     -- "$CLI" "$@" >/dev/null 2>&1
   manual_result

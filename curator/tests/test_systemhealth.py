@@ -494,3 +494,57 @@ class TestMemoryMirror(unittest.TestCase):
         self.assertEqual(level, "warn")
         self.assertIn("neuer als lokal", text)
 
+
+
+class TestUpdateCheck(unittest.TestCase):
+    """Update-Zeile (seit 2026-10-23): liest den Zustand von update.sh --check,
+    holt ihn hoechstens einmal am Tag neu, ohne git-Checkout keine Zeile."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.repo = self.tmp / "repo"
+        (self.repo / ".git").mkdir(parents=True)
+        self.script = self.repo / "update.sh"
+        self.state = self.tmp / "update-check.json"
+        self.now = datetime(2026, 10, 23, 12, 0, tzinfo=timezone.utc)
+
+    def _check(self, run=None):
+        with patch.object(sh, "UPDATE_SCRIPT", self.script), patch.object(sh, "UPDATE_STATE", self.state), \
+                patch.object(sh.subprocess, "run", run or unittest.mock.Mock()) as mocked:
+            return sh.check_update(self.now), mocked
+
+    def _write(self, hours_ago, behind, local="0.4.4", remote="0.4.5"):
+        at = (self.now - timedelta(hours=hours_ago)).isoformat()
+        self.state.write_text(json.dumps({"checked_at": at, "behind": behind, "local": local, "remote": remote}))
+
+    def test_no_git_checkout_no_line(self):
+        (self.repo / ".git").rmdir()
+        result, mocked = self._check()
+        self.assertIsNone(result)
+        mocked.assert_not_called()
+
+    def test_fresh_state_no_fetch(self):
+        self._write(2, 0, "0.4.4", "0.4.4")
+        result, mocked = self._check()
+        mocked.assert_not_called()
+        self.assertEqual(result["level"], "ok")
+
+    def test_update_available_is_warn(self):
+        self._write(2, 1)
+        result, _ = self._check()
+        self.assertEqual(result["level"], "warn")
+        self.assertIn("0.4.4 → 0.4.5", result["detail"])
+
+    def test_stale_state_triggers_check(self):
+        self._write(30, 0, "0.4.4", "0.4.4")
+
+        def fake_run(*args, **kwargs):
+            self._write(0, 2, "0.4.4", "0.4.6")
+
+        result, _ = self._check(run=fake_run)
+        self.assertEqual(result["level"], "warn")
+        self.assertIn("0.4.6", result["detail"])
+
+    def test_offline_is_ok(self):
+        result, _ = self._check(run=unittest.mock.Mock(side_effect=OSError("offline")))
+        self.assertEqual(result["level"], "ok")

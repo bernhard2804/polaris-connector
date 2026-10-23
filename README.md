@@ -43,6 +43,33 @@ Aus einem git-Checkout sind omarchy-backup und das Maschinengedaechtnis
 (`~/.config/ai-agents`) optional; der Health Check zeigt sie dann als „nicht
 eingerichtet“. Das Installationspaket bringt beide mit (siehe unten).
 
+### Aktualisieren: `polaris update` (seit 2026-10-23)
+
+Ein git-Checkout (z. B. ein Klon des oeffentlichen Spiegels) wird wie ein
+Omarchy-Plugin aktualisiert:
+
+```bash
+polaris update            # Aenderungen zeigen, nachfragen, aktualisieren
+polaris update --yes      # ohne Nachfrage (Agenten)
+polaris update --check    # nur nachsehen; Exit 0 = Update da
+```
+
+Ablauf (`update.sh`): `git fetch`, nur Fast-Forward, dann `install.sh --yes`
+fuer das, was schon eingerichtet ist (Units, Widget, Dock, Gedaechtnis), dann
+`polaris-curator health`. Lokale Commits oder geaenderte Dateien brechen ab
+(eigene Aenderungen gehoeren in einen Branch oder Pull Request). Wird der
+Health-Check durch das Update rot oder scheitert `install.sh`, geht es zurueck
+auf den alten Commit. Der Health-Check zeigt hoechstens einmal am Tag
+(`git fetch`) eine Zeile „Update: verfuegbar …“. Versionsnummer ist die der
+Erweiterung (`extension/manifest.json`).
+
+Liegen die Projektordner auf einem Laufwerk, das ein eigener systemd-Dienst
+einhaengt (z. B. rclone), starten Bridge, Curator und Spiegel danach:
+`install.sh --storage-unit <unit>` legt dafuer Drop-ins
+`<unit>.d/polaris-storage.conf` an (Standard: `rclone-projekte.service`, falls
+vorhanden). Lokale Ordner, etwa ein Nextcloud-Sync-Ordner, brauchen nichts
+(`--storage-unit none`).
+
 ### Weitergabe ohne git (Installationspaket)
 
 `./make-bundle.sh` baut `dist/polaris-setup-<Version>.tar.gz` mit dem ganzen

@@ -54,6 +54,7 @@ Maschinengedächtnis ~/.config/ai-agents                Regeln + Notizen aller A
 - **Prozesse nie per Muster beenden** (`pkill -f …`), sondern über die genaue PID. Ein Muster trifft leicht fremde Prozesse.
 - **git-Anmeldung über gh**, wenn gh per mise installiert ist: Als Credential-Helper den stabilen Wrapper `~/.local/bin/gh` eintragen, nicht den versionsgebundenen Pfad aus `gh auth setup-git`. Der zeigt nach jedem gh-Update ins Leere.
 - **Gedächtnis-Spiegel:** Ist der Spiegel neuer als die lokale Fassung (typisch nach einer Wiederherstellung), überschreibt `polaris-memory-mirror` nichts und meldet es. Erst zurückholen: `rsync -rlt --exclude=.alt/ <Spiegel>/ ~/.config/ai-agents/`.
+- **Aktualisieren nur mit `polaris update`** (nicht nur `git pull`): Units, Widget-Kopie und Links liegen außerhalb des Repos und bleiben sonst alt. `update.sh` macht Fast-Forward, `install.sh` für das schon Eingerichtete, Health-Check und bei Fehlern den Rückweg. Laufwerks-Dienst für die Projektordner per `install.sh --storage-unit <unit|none>` (Drop-in `polaris-storage.conf`), nicht fest in den Units.
 - **omarchy-backup:** Status YELLOW heißt nur „Abweichung von der Baseline“, kein Fehler. Eine Baseline setzt nur der Nutzer. Systemdateien unter `/etc` sichert es nicht; eigene Anpassungen dort gehören wörtlich ins Maschinengedächtnis.
 
 ## Installation abgebrochen: so geht es weiter

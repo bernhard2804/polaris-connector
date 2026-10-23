@@ -321,6 +321,36 @@ def check_widget(src: Path | None = None, active: Path | None = None) -> dict | 
     return _c("widget", "Widget", "ok", "Kopie aktuell")
 
 
+UPDATE_STATE = HOME / ".local" / "state" / "polaris" / "update-check.json"
+UPDATE_SCRIPT = Path(__file__).resolve().parents[2] / "update.sh"
+UPDATE_MAX_AGE_H = 24
+
+
+def check_update(now: datetime) -> dict | None:
+    """Gibt es einen neueren Polaris-Stand (git-Checkout, seit 2026-10-23)?
+    Ausnahme vom Grundsatz "nur Zustandsdateien": hoechstens einmal am Tag ein
+    `git fetch` ueber `update.sh --check`, sonst nur die Zustandsdatei. Ohne
+    git-Checkout (Installationspaket) keine Zeile."""
+    if not (UPDATE_SCRIPT.parent / ".git").exists():
+        return None
+    state: dict = {}
+    try:
+        state = json.loads(UPDATE_STATE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        pass
+    age = _age_days(state.get("checked_at"), now)
+    if age is None or age * 24 >= UPDATE_MAX_AGE_H:
+        try:
+            subprocess.run([str(UPDATE_SCRIPT), "--check"], capture_output=True, timeout=70, check=False)
+            state = json.loads(UPDATE_STATE.read_text(encoding="utf-8"))
+        except (OSError, ValueError, subprocess.SubprocessError):
+            return _c("update", "Update", "ok", "Prüfung nicht möglich (offline?) – polaris update --check")
+    if int(state.get("behind") or 0) > 0:
+        return _c("update", "Update", "warn",
+                  f"verfügbar: {state.get('local', '?')} → {state.get('remote', '?')} – polaris update")
+    return _c("update", "Update", "ok", f"aktuell ({state.get('local', '?')})")
+
+
 def check_curator_timer() -> dict:
     result = _systemctl_user("show", "polaris-curator.service", "--property=Result", "--value")
     enabled = _systemctl_user("is-enabled", "polaris-curator.timer")
@@ -733,6 +763,7 @@ def collect(projects: dict, max_days_without_chatgpt: int, max_days_without_clau
         check_mount(),
         check_memory(),
         check_widget(),
+        check_update(now),
     ]
     checks = [c for c in checks if c is not None]
     system = check_system(now)

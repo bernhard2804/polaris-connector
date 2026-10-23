@@ -18,6 +18,10 @@ wie er Änderungen als Pull Request vorschlägt.
   Installation aktualisiert sie automatisch von hier (siehe unten).
 - Verbesserungen, die auch anderen nützen, schickst du als **Pull Request**
   gegen `main`. Bei der Erweiterung ist das der einzige Weg.
+- **Aktualisieren:** `polaris update` (ab dem Stand vom 2026-10-23). Es holt
+  den neuen Stand per Fast-Forward, führt `install.sh` aus, prüft mit
+  `polaris-curator health` und rollt bei Fehlern zurück. Lokale Commits auf
+  `main` verhindern das Update: Eigene Änderungen gehören in einen Branch.
 
 ## Für den Menschen: Was ist ein Pull Request?
 

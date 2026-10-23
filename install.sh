@@ -27,6 +27,11 @@
 #   --no-memory  Maschinengedaechtnis (~/.config/ai-agents) nicht anlegen/aktualisieren
 #   --backup-target  Ordner fuer die Sicherungen von omarchy-backup (z. B. auf
 #                einem Cloud-Laufwerk); schaltet die taeglichen Snapshots ein
+#   --storage-unit  systemd-User-Unit, die das Laufwerk mit den Projektordnern
+#                einhaengt (z. B. rclone-projekte.service); Bridge, Curator und
+#                Spiegel starten dann danach (Drop-in polaris-storage.conf).
+#                Standard: bisheriger Eintrag, sonst rclone-projekte.service,
+#                falls vorhanden. "none" fuer lokale Ordner (z. B. Nextcloud)
 #   --memory-mirror  Ordner, in den das Maschinengedaechtnis gespiegelt wird
 #                (z. B. <Projektordner>/Polaris/Maschinengedaechtnis); fehlt
 #                ~/.config/ai-agents, wird es von dort zurueckgeholt
@@ -51,7 +56,7 @@ PLUGIN_DIR="$HOME/.config/omarchy/plugins/$PLUGIN_ID"
 BACKUP_DIR="$HOME/.local/share/polaris/install-backups/$(date +%Y%m%d-%H%M%S)"
 
 ORIG_ARGS=("$@")  # fuer den Neustart aus dem App-Ordner (die Schleife verbraucht "$@")
-DRY=0 PROJECTS="" RUNTIME="" UNITS=1 WIDGET=1 DOCK=1 RESTART=1 OBACKUP=1 MEMORY=1 YES=0 OB_TARGET="" MIRROR=""
+DRY=0 PROJECTS="" RUNTIME="" STORAGE_UNIT="" UNITS=1 WIDGET=1 DOCK=1 RESTART=1 OBACKUP=1 MEMORY=1 YES=0 OB_TARGET="" MIRROR=""
 GUIDED=0; [ $# -eq 0 ] && [ -t 0 ] && [ -t 1 ] && GUIDED=1
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -67,6 +72,7 @@ while [ $# -gt 0 ]; do
     --yes|-y) YES=1 ;;
     --backup-target) OB_TARGET="${2:?--backup-target braucht einen Ordner}"; shift ;;
     --memory-mirror) MIRROR="${2:?--memory-mirror braucht einen Ordner}"; shift ;;
+    --storage-unit) STORAGE_UNIT="${2:?--storage-unit braucht eine Unit oder none}"; shift ;;
     -h|--help) awk 'NR>1 && /^#/{sub(/^# ?/,"");print;next} NR>1{exit}' "$0"; exit 0 ;;
     *) echo "Unbekannte Option: $1" >&2; exit 2 ;;
   esac
@@ -444,6 +450,26 @@ if [ "$UNITS" = 1 ]; then
     say "  $(basename "$src"): installiert"
     changed=1
   done
+  # Laufwerks-Dienst als Drop-in statt fest in den Units (seit 2026-10-23)
+  dropin_name="polaris-storage.conf"
+  if [ -z "$STORAGE_UNIT" ]; then
+    STORAGE_UNIT="$(sed -n 's/^Wants=//p' "$UNIT_DIR/polaris-curator.service.d/$dropin_name" 2>/dev/null | head -1 || true)"
+    [ -z "$STORAGE_UNIT" ] && systemctl --user cat rclone-projekte.service >/dev/null 2>&1 && STORAGE_UNIT=rclone-projekte.service
+  fi
+  for u in polaris-bridge polaris-curator polaris-memory-mirror; do
+    d="$UNIT_DIR/$u.service.d" f="$UNIT_DIR/$u.service.d/$dropin_name"
+    if [ -z "$STORAGE_UNIT" ] || [ "$STORAGE_UNIT" = none ]; then
+      [ -e "$f" ] && { backup "$f"; run rm -f -- "$f"; changed=1; say "  $u: ohne Laufwerks-Dienst"; }
+      continue
+    fi
+    want="$(printf '[Unit]\n# von install.sh (--storage-unit): erst nach dem Laufwerk starten\nWants=%s\nAfter=%s\n' "$STORAGE_UNIT" "$STORAGE_UNIT")"
+    [ "$(cat "$f" 2>/dev/null)" = "$want" ] && continue
+    [ -e "$f" ] && backup "$f"
+    run mkdir -p "$d"
+    if [ "$DRY" = 1 ]; then say "  [dry-run] $f: Wants/After=$STORAGE_UNIT"; else printf '%s\n' "$want" >"$f"; fi
+    say "  $u: nach $STORAGE_UNIT"
+    changed=1
+  done
   [ "$changed" = 1 ] && run systemctl --user daemon-reload
   for u in polaris-bridge.path polaris-bridge.timer polaris-curator.timer polaris-memory-mirror.timer; do
     if [ "$(systemctl --user is-enabled "$u" 2>/dev/null)" = enabled ] && systemctl --user is-active -q "$u"; then
@@ -617,7 +643,7 @@ if [ "$SHELL_RESTART" = 1 ] && [ "$DRY" = 0 ]; then
       || warn "Neustart fehlgeschlagen - von Hand: omarchy restart shell"
   fi
 fi
-XPI="$(ls -1 "$REPO"/dist/*-signed.xpi 2>/dev/null | sort -V | tail -n 1)"
+XPI="$(ls -1 "$REPO"/dist/*-signed.xpi 2>/dev/null | sort -V | tail -n 1 || true)"  # im oeffentlichen Spiegel gibt es keine .xpi
 say "Naechste Schritte (falls noch nicht erledigt):"
 if [ -n "$XPI" ]; then
   say "  1. Firefox-Erweiterung: firefox '$XPI'"
