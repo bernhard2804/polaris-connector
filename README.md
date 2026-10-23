@@ -358,6 +358,28 @@ beim Chatwechsel, Text-Schluessel fuer Turns ohne ID, letzte Antwort erst nach
 8 s ohne Aenderung) und schickt ebenfalls `member_ids`. Abschaltbar im Popup
 („ChatGPT über Schnittstelle lesen“).
 
+### Speicherwaechter fuer ChatGPT- und Claude-Tabs (seit v0.4.4)
+
+Anlass: Am 22. und 23.10.2026 wuchs ein ChatGPT-Tab auf 20-26 GB (RAM + Swap);
+systemd-oomd beendete daraufhin ganz Firefox mit allen Tabs. Firefox gibt
+Erweiterungen keinen Zugriff auf den Speicher eines Tabs, deshalb misst der
+Native Host (`bridge/polaris/tab_memory.py`): Er ist Kind des
+Firefox-Hauptprozesses und liest dessen Tab-Prozesse (unter dem Forkserver)
+aus `/proc`, gezaehlt wird VmRSS + VmSwap des groessten.
+
+- `background.js` fragt jede Minute (`alarms`), aber nur solange ein
+  ChatGPT- oder Claude-Tab offen ist (`tab-memory` an den Host).
+- Ab **4 GiB** Desktop-Meldung (normal), ab **8 GiB** dringend; erneut nur bei
+  hoeherer Stufe, anderem Prozess oder alle 10 min, solange kritisch
+  (Zustand: `~/.local/state/polaris/tab-memory.json`).
+- `memory_banner.js` zeigt in ChatGPT- und Claude-Tabs eine Hinweisleiste mit
+  Groesse und „F5 druecken (Neu laden)“; ausgeblendet bleibt sie aus, bis die
+  Stufe steigt.
+- Welcher Prozess zu welcher Seite gehoert, verraet `/proc` nicht; die
+  Meldung sagt deshalb „vermutlich“. Kein automatisches Neuladen (Entwuerfe
+  und laufende Antworten gingen verloren).
+- Kosten: ein Host-Start (~60 ms CPU) pro Minute, nur bei offenem Tab.
+
 ## Polaris Sync aktivieren
 
 1. Einen ChatGPT-Chat oeffnen, der zu einem ChatGPT-Project gehoert.
@@ -555,8 +577,8 @@ Extension-Tests (seit 2026-09-29, ohne Abhaengigkeiten): `harness.mjs`
 `background.js`. `POLARIS_CONTENT_JS=<datei>` prueft einen anderen Stand von
 `content.js` - so laesst sich zeigen, dass ein Test den alten Fehler erkennt.
 
-Bridge: 136 Tests (Stand 2026-10-07, abends), reines `unittest` (kein pytest auf
-diesem System installiert); einer davon startet die 43 Node-Tests der
+Bridge: 143 Tests (Stand 2026-10-23), reines `unittest` (kein pytest auf
+diesem System installiert); einer davon startet die 56 Node-Tests der
 Extension, sofern `node` vorhanden ist. Abgedeckt u. a.: Matching, Schema,
 atomare append-only Ablage, Revisionen, Pending -> Mapping ->
 Nachverarbeitung, Chat-Abbild/Turns (`test_snapshot.py`), Konflikte und

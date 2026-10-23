@@ -12,7 +12,9 @@ function ev(conv, id) {
   return { schema_version: 1, source: 'chatgpt', project: { id: 'g-p-1', name: 'P' }, conversation: { id: conv }, message: { id, role: 'user', content: 'x' }, captured_at: '2026-09-29T10:00:00Z' };
 }
 
-function env({ nativeAccepts = (events) => events.map((e) => e.message.id), nativeAvailable = true, snapshotReply = { ok: true } } = {}) {
+function env({ nativeAccepts = (events) => events.map((e) => e.message.id), nativeAvailable = true, snapshotReply = { ok: true }, memoryReply = { ok: true, level: 'ok', largest: null }, chatgptTabs = [], existingAlarm = null } = {}) {
+  const alarms = { created: [], listener: null };
+  const tabMessages = [];
   const storage = {};
   const posted = [];
   const downloads = [];
@@ -38,7 +40,9 @@ function env({ nativeAccepts = (events) => events.map((e) => e.message.id), nati
             postMessage(msg) {
               posted.push(msg);
               const accepted = msg.type === 'export-events' ? nativeAccepts(msg.events) : [];
-              const reply = msg.type === 'export-snapshot' ? { id: msg.id, ...snapshotReply } : { id: msg.id, ok: true, accepted, counts: {} };
+              const reply = msg.type === 'export-snapshot' ? { id: msg.id, ...snapshotReply }
+                : msg.type === 'tab-memory' ? { id: msg.id, ...memoryReply }
+                  : { id: msg.id, ok: true, accepted, counts: {} };
               setTimeout(() => onMsg.forEach((fn) => fn(reply)), 1);
             },
             disconnect() {},
@@ -69,7 +73,16 @@ function env({ nativeAccepts = (events) => events.map((e) => e.message.id), nati
         onChanged: { addListener: (fn) => dlListeners.push(fn), removeListener() {} },
         erase: async () => {},
       },
-      tabs: { onRemoved: { addListener() {} }, sendMessage: async () => ({}) },
+      tabs: {
+        onRemoved: { addListener() {} },
+        sendMessage: async (tabId, msg) => { tabMessages.push([tabId, msg]); return {}; },
+        query: async ({ url }) => (JSON.stringify(url) === JSON.stringify(['https://chatgpt.com/*', 'https://claude.ai/*']) ? chatgptTabs : []),
+      },
+      alarms: {
+        onAlarm: { addListener: (fn) => { alarms.listener = fn; } },
+        get: async () => existingAlarm,
+        create: (name, info) => alarms.created.push([name, info]),
+      },
       permissions: { contains: async () => true },
       action: { setBadgeText() {}, setBadgeBackgroundColor() {} },
     },
@@ -78,7 +91,11 @@ function env({ nativeAccepts = (events) => events.map((e) => e.message.id), nati
   vm.runInContext(SRC, sandbox);
   const wait = (ms = 30) => new Promise((r) => setTimeout(r, ms));
   return {
-    posted, downloads, storage,
+    posted, downloads, storage, alarms, tabMessages,
+    async fireAlarm(name = 'polaris-tab-memory') {
+      alarms.listener({ name });
+      await wait();
+    },
     async exportSnapshot(snapshot) {
       const res = await messageListener({ type: 'export-snapshot', snapshot }, { tab: { id: 1 } });
       await wait();
@@ -132,4 +149,40 @@ test('Ablehnung eines Abbilds durch die Bridge wird gemeldet, nicht heruntergela
   assert.equal(res.ok, false);
   assert.match(res.error, /snapshot-shape/);
   assert.deepEqual(e.downloads, []);
+});
+
+// Speicherwaechter (0.4.4)
+
+test('Speicherwaechter: Takt wird nur angelegt, wenn er fehlt', async () => {
+  const fresh = env();
+  await fresh.wait();
+  assert.deepEqual(JSON.parse(JSON.stringify(fresh.alarms.created)), [['polaris-tab-memory', { periodInMinutes: 1 }]]);
+  const existing = env({ existingAlarm: { name: 'polaris-tab-memory' } });
+  await existing.wait();
+  assert.deepEqual(existing.alarms.created, []);
+});
+
+test('Speicherwaechter: ohne ChatGPT- oder Claude-Tab wird der Host nicht gestartet', async () => {
+  const e = env();
+  await e.fireAlarm();
+  assert.equal(e.posted.length, 0);
+});
+
+test('Speicherwaechter: Stufe und Groesse gehen an alle ChatGPT- und Claude-Tabs', async () => {
+  const e = env({
+    chatgptTabs: [{ id: 3 }, { id: 7 }],
+    memoryReply: { ok: true, level: 'warn', largest: { pid: 9, bytes: 5 * 1024 ** 3 } },
+  });
+  await e.fireAlarm();
+  assert.deepEqual(e.posted.map((m) => m.type), ['tab-memory']);
+  assert.deepEqual(JSON.parse(JSON.stringify(e.tabMessages)), [
+    [3, { type: 'tab-memory', level: 'warn', bytes: 5 * 1024 ** 3 }],
+    [7, { type: 'tab-memory', level: 'warn', bytes: 5 * 1024 ** 3 }],
+  ]);
+});
+
+test('Speicherwaechter: ohne Native Host keine Meldung an die Tabs', async () => {
+  const e = env({ nativeAvailable: false, chatgptTabs: [{ id: 3 }] });
+  await e.fireAlarm();
+  assert.deepEqual(e.tabMessages, []);
 });

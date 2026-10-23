@@ -378,3 +378,44 @@ api().runtime.onMessage.addListener((msg, sender) => {
 api().tabs.onRemoved.addListener((tabId) => {
   tabContexts.delete(tabId);
 });
+
+// --- Speicherwaechter (seit 0.4.4) ------------------------------------------
+// Anlass 2026-10-22/23: ein ChatGPT-Tab wuchs auf 20-26 GB, systemd-oomd
+// beendete ganz Firefox. Firefox verraet Erweiterungen den Speicher eines
+// Tabs nicht; der Native Host liest ihn aus /proc (bridge/polaris/
+// tab_memory.py), warnt selbst per Desktop-Meldung und liefert die Stufe.
+// Jede Minute, aber nur solange ein ChatGPT- oder Claude-Tab offen ist (sonst
+// startet kein Host). Diese Tabs zeigen dann die Hinweisleiste (memory_banner.js).
+const MEMORY_ALARM = 'polaris-tab-memory';
+const MEMORY_TAB_URLS = ['https://chatgpt.com/*', 'https://claude.ai/*'];
+
+async function checkTabMemory() {
+  const tabs = await api().tabs.query({ url: MEMORY_TAB_URLS });
+  if (!tabs.length) return null;
+  let reply;
+  try {
+    reply = await sendNative({ type: 'tab-memory' });
+  } catch (err) {
+    return null; // Host fehlt: keine Warnung, aber auch kein Fehler im Export
+  }
+  if (!reply || !reply.ok) return null;
+  const msg = { type: 'tab-memory', level: reply.level, bytes: reply.largest ? reply.largest.bytes : 0 };
+  await Promise.all(tabs.map((t) => api().tabs.sendMessage(t.id, msg).catch(() => {})));
+  return reply;
+}
+
+if (api().alarms) {
+  api().alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === MEMORY_ALARM) {
+      checkTabMemory().catch((err) => console.warn('[Polaris] Speicherpruefung fehlgeschlagen:', err));
+    }
+  });
+  // Nur anlegen, wenn er fehlt: jedes Aufwachen des Background-Skripts
+  // wuerde den Takt sonst neu starten, und er liefe nie ab.
+  api()
+    .alarms.get(MEMORY_ALARM)
+    .then((existing) => {
+      if (!existing) api().alarms.create(MEMORY_ALARM, { periodInMinutes: 1 });
+    })
+    .catch(() => {});
+}

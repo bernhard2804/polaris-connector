@@ -3,9 +3,9 @@
     "polaris-chatgpt-connector@mstarchy.local": {
       "updates": [
         {
-          "version": "0.4.3",
-          "update_link": "https://github.com/mstio/polaris-connector/releases/download/v0.4.3/polaris-chatgpt-connector-0.4.3-signed.xpi",
-          "update_hash": "sha256:68d029ed7a1a205938f8544f3cecee0bbf199e805ae91155ee3b34782dde1351"
+          "version": "0.4.4",
+          "update_link": "https://github.com/mstio/polaris-connector/releases/download/v0.4.4/polaris-chatgpt-connector-0.4.4-signed.xpi",
+          "update_hash": "sha256:9580450e33e96cfd7d50f3b1e99526c7b6ed52a6397992c5d032985fba0f3288"
         }
       ]
     }

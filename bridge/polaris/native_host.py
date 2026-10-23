@@ -28,6 +28,12 @@ Projektzuordnung aus dem Popup (seit 2026-09-25):
   <- {"id": <n>, "ok": true, "current": "Firma", "counts": {...}}
 Waehlbar sind nur Ordner direkt unter den konfigurierten project_roots.
 
+Speicherwaechter (seit 2026-10-23, Extension 0.4.4, siehe tab_memory.py):
+  -> {"id": <n>, "type": "tab-memory"}
+  <- {"id": <n>, "ok": true, "level": "ok"|"warn"|"critical",
+      "largest": {"pid": .., "bytes": ..}|null, "warn_bytes": .., "critical_bytes": ..,
+      "notified": <ob gerade eine Desktop-Meldung kam>}
+
 Das Programm beendet sich, wenn Firefox den Port schliesst (EOF) oder nach
 IDLE_TIMEOUT_SECONDS ohne Nachricht.
 """
@@ -44,7 +50,7 @@ import uuid
 
 from pathlib import Path
 
-from . import config, mapping, pipeline, storage
+from . import config, mapping, pipeline, storage, tab_memory
 
 PROTOCOL_VERSION = 1
 IDLE_TIMEOUT_SECONDS = 120
@@ -176,6 +182,10 @@ def handle(request: dict) -> dict:
         return handle_list_folders(request)
     if kind == "map-project":
         return handle_map_project(request)
+    if kind == "tab-memory":
+        # Speicherwaechter (Extension 0.4.4): groesster Firefox-Tab-Prozess,
+        # Stufe ok/warn/critical; Desktop-Meldung macht der Host selbst.
+        return {"id": req_id, "ok": True, **tab_memory.check()}
     if kind == "capture-status":
         # Letzter Zustand der Schnittstellen-Erfassung (Extension) fuer den
         # Health Check: {ok, error?, at}. Erfolg merkt sich den Zeitpunkt.

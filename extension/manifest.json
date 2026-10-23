@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Polaris ChatGPT Connector",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Exportiert neue Messages aus aktivierten ChatGPT- und Claude-Projekten in die lokale Polaris Inbox.",
   "browser_specific_settings": {
     "gecko": {
@@ -21,6 +21,7 @@
     ]
   },
   "permissions": [
+    "alarms",
     "downloads",
     "storage",
     "nativeMessaging"
@@ -37,7 +38,8 @@
       "js": [
         "extractor.js",
         "chatgpt_api.js",
-        "content.js"
+        "content.js",
+        "memory_banner.js"
       ],
       "run_at": "document_idle"
     },
@@ -46,7 +48,8 @@
         "https://claude.ai/*"
       ],
       "js": [
-        "claude.js"
+        "claude.js",
+        "memory_banner.js"
       ],
       "run_at": "document_idle"
     }
