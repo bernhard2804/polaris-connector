@@ -1,0 +1,20 @@
+#!/bin/bash
+# Exit 0, wenn Polaris jetzt auf das Drive-Laufwerk zugreifen darf; Exit 1, wenn
+# der Bildschirm gesperrt ist oder logind gerade einschlaeft.
+#
+# Ein im FUSE-Aufruf haengender Prozess (Zustand D) laesst das Einfrieren vor dem
+# Suspend scheitern; logind versucht es dann minutenlang erneut und der
+# Sperrbildschirm haengt (Vorfall 2026-10-23). Genutzt als ExecCondition= der
+# Bridge- und Spiegel-Units und vom Widget (bin/status-json).
+#
+# Ohne logind bzw. ohne Omarchy gilt der Zustand als wach.
+
+asleep="$(busctl get-property org.freedesktop.login1 /org/freedesktop/login1 \
+  org.freedesktop.login1.Manager PreparingForSleep 2>/dev/null)"
+[ "$asleep" = "b true" ] && exit 1
+
+# Omarchy-Hilfsprogramm: 0 gesperrt, 1 entsperrt, 2 unbestimmt (= entsperrt)
+locked=/usr/share/omarchy/bin/omarchy-hyprland-session-locked
+[ -x "$locked" ] && "$locked" 2>/dev/null && exit 1
+
+exit 0

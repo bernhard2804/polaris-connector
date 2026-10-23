@@ -376,7 +376,7 @@ command -v rsync >/dev/null || warn "rsync fehlt - Spiegel des Maschinengedaecht
 step "Befehle in $BIN_DIR"
 [ -d "$BIN_DIR" ] || run mkdir -p "$BIN_DIR"
 for pair in "polaris:bridge/bin/polaris" "polaris-curator:curator/bin/polaris-curator" \
-            "polaris-memory-mirror:memory/tools/memory-mirror"; do
+            "polaris-memory-mirror:memory/tools/memory-mirror" "polaris-awake:bridge/bin/polaris-awake"; do
   name="${pair%%:*}" target="$REPO/${pair#*:}" link="$BIN_DIR/${pair%%:*}"
   if [ "$(readlink -f "$link" 2>/dev/null)" = "$target" ]; then
     say "  $name: ok"

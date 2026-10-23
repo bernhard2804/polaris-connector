@@ -3,13 +3,27 @@
 # process invocation for the QML widget.
 set -uo pipefail
 
+LAST="${XDG_STATE_HOME:-$HOME/.local/state}/polaris/widget-status.json"
+
+# Bei gesperrtem Bildschirm oder waehrend logind einschlaeft das Drive-Laufwerk
+# nicht anfassen, sondern den letzten Stand zeigen (Begruendung in polaris-awake).
+if command -v polaris-awake >/dev/null && ! polaris-awake; then
+  if [ -s "$LAST" ]; then
+    cat "$LAST"
+  else
+    jq -n '{installed:true, error:"Status pausiert, solange der Bildschirm gesperrt ist", projects:[], summary:{}}'
+  fi
+  exit 0
+fi
+
 CLI="$(command -v polaris-curator || true)"
 if [ -z "$CLI" ]; then
   jq -n '{installed:false, error:"polaris-curator is not installed or not on PATH"}'
   exit 0
 fi
 
-payload="$("$CLI" status-all --json 2>/dev/null)"
+# Obergrenze, falls das Laufwerk nicht antwortet (normal: wenige Sekunden).
+payload="$(timeout --kill-after=10 90 "$CLI" status-all --json 2>/dev/null)"
 code=$?
 if [ "$code" -ne 0 ] || ! jq -e . >/dev/null 2>&1 <<<"$payload"; then
   jq -n --arg error "${payload:-Curator status could not be read}" \
@@ -34,13 +48,13 @@ last_result="$(systemctl --user show polaris-curator.service \
   --property=Result --value 2>/dev/null || true)"
 
 # Health-Check der eigenen Bausteine (polaris-curator health, seit 2026-09-25).
-system_health="$("$CLI" health --json 2>/dev/null)"
+system_health="$(timeout --kill-after=10 90 "$CLI" health --json 2>/dev/null)"
 if ! jq -e . >/dev/null 2>&1 <<<"$system_health"; then
   # Absturz des Checks selbst ist rot: er koennte einen roten Zustand verdecken.
   system_health='{"level":"error","components":[{"id":"health","label":"Health-Check","level":"error","detail":"konnte nicht ermittelt werden – polaris-curator health im Terminal ausführen"}],"system":[]}'
 fi
 
-jq \
+out="$(jq \
   --argjson systemHealth "$system_health" \
   --argjson timerEnabled "$timer_enabled" \
   --argjson timerActive "$timer_active" \
@@ -55,4 +69,10 @@ jq \
       next_run: $nextRun,
       last_result: $lastResult
     }
-  }' <<<"$payload"
+  }' <<<"$payload")"
+printf '%s\n' "$out"
+
+# Letzten guten Stand fuer die Sperrzeit merken (lokal, nicht auf dem Laufwerk).
+mkdir -p "${LAST%/*}" 2>/dev/null &&
+  printf '%s\n' "$out" >"$LAST.tmp" 2>/dev/null && mv -f "$LAST.tmp" "$LAST" 2>/dev/null
+exit 0

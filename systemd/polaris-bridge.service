@@ -12,4 +12,7 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=oneshot
+# Bei Sperre oder beim Einschlafen auslassen, der naechste Timer-Lauf holt nach
+# (haengender Laufwerkszugriff blockierte am 2026-10-23 den Suspend).
+ExecCondition=%h/.local/bin/polaris-awake
 ExecStart=%h/.local/bin/polaris process
