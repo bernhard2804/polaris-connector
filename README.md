@@ -70,6 +70,49 @@ einhaengt (z. B. rclone), starten Bridge, Curator und Spiegel danach:
 vorhanden). Lokale Ordner, etwa ein Nextcloud-Sync-Ordner, brauchen nichts
 (`--storage-unit none`).
 
+Was sich je Stand geaendert hat, auch Nebenwirkungen von `install.sh` (neue
+Skills, strengere Pruefungen): [`CHANGELOG.md`](CHANGELOG.md).
+
+### Umstieg vom Paket auf den git-Checkout
+
+Wer Polaris aus dem Installationspaket eingerichtet hat, hat die Programmdateien
+unter `~/.local/share/polaris/app` und keine gemeinsame git-Historie mit dem
+Spiegel. `polaris update` und `git pull --ff-only` gehen dort nicht, auch nicht,
+wenn man den Ordner selbst unter git gestellt hat. **Achtung:** Im Spiegel fehlt
+`extras/` (omarchy-backup, Widgets `mst.omarchy-backup` und
+`mst.agent-launchers`). Zeigt `~/.local/bin/omarchy-backup` dort hinein, macht
+ein blosser Wechsel auf den Spiegel omarchy-backup kaputt. Deshalb zuerst
+`extras/` auslagern:
+
+```bash
+APP=~/.local/share/polaris/app
+readlink -f ~/.local/bin/omarchy-backup          # zeigt es nach $APP/extras/...?
+# 1. extras/ an einen eigenen Ort ausserhalb des Programmordners
+mkdir -p ~/.local/share/polaris-extras
+cp -a "$APP"/extras/. ~/.local/share/polaris-extras/
+~/.local/share/polaris-extras/omarchy-backup/install.sh   # Link neu setzen, Konfiguration bleibt
+printf 'include ~/.local/share/polaris-extras\n' > ~/.config/omarchy-backup/paths.d/polaris-extras.conf
+omarchy-backup doctor                            # muss HEALTHY melden
+# 2. Programmordner auf den Spiegel umstellen, alten Stand behalten
+cd "$APP"
+[ -d .git ] || git init -q
+git remote set-url origin https://github.com/mstio/polaris-connector.git 2>/dev/null \
+  || git remote add origin https://github.com/mstio/polaris-connector.git
+git fetch origin
+git branch paket-alt 2>/dev/null || true         # sichert eigene Commits, falls vorhanden
+git checkout -B main origin/main --force         # ersetzt die Dateien durch den Spiegel
+# 3. neu einrichten und pruefen
+./install.sh --dry-run --yes --storage-unit none # ggf. eigene Laufwerks-Unit statt none
+./install.sh --yes --storage-unit none
+omarchy restart shell
+polaris update --check                           # "aktuell"
+```
+
+Die Widgets selbst laufen aus Kopien unter `~/.config/omarchy/plugins/` und
+sind vom Umstieg nicht betroffen. Ihre Quellen unter `polaris-extras/` braucht
+man nur fuer eine Neuinstallation. Danach genuegt `polaris update`. So hat ein
+Nutzer am 2026-10-24 vom Paket des 15.10. auf 0.4.4 gewechselt.
+
 ### Weitergabe ohne git (Installationspaket)
 
 `./make-bundle.sh` baut `dist/polaris-setup-<Version>.tar.gz` mit dem ganzen
