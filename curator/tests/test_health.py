@@ -40,6 +40,25 @@ class TestHealth(unittest.TestCase):
         for p in self.patches:
             p.stop()
 
+    def test_no_message_at_all_warns(self):
+        with TempProject() as a:
+            h = health.collect({"a": a}, 3)
+            self.assertIn("Noch keine ChatGPT-Nachricht archiviert.", h["warnings"])
+
+    def test_claude_only_does_not_warn(self):
+        with TempProject() as a:
+            d = a / "raw" / "claude" / "messages"
+            d.mkdir(parents=True)
+            (d / "m1.json").write_text("{}", encoding="utf-8")
+            h = health.collect({"a": a}, 3)
+            self.assertEqual(h["warnings"], [])
+
+    def test_zero_days_disables_chatgpt_check(self):
+        with TempProject() as a, TempProject() as b:
+            self.assertEqual(health.collect({"a": a}, 0)["warnings"], [])
+            _age(self._msg(b, "m1"), 20)
+            self.assertEqual(health.collect({"b": b}, 0)["warnings"], [])
+
     def test_recent_message_in_one_project_is_healthy_even_if_others_idle(self):
         with TempProject() as a, TempProject() as b:
             _age(self._msg(a, "m1"), 0.5)

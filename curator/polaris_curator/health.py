@@ -182,17 +182,24 @@ def collect(projects: dict[str, Path], max_days_without_chatgpt: int, now: datet
     now = now or datetime.now(timezone.utc)
     per_project: dict[str, str | None] = {}
     latest = None
+    other_source = False
     for path in sorted({p.resolve() for p in projects.values()}):
         m = _latest_mtime(layout.messages_dir(path))
         per_project[path.name] = _iso(m)
         if m is not None and (latest is None or m > latest):
             latest = m
+        if _latest_mtime(path / "raw" / "claude" / "messages") is not None:
+            other_source = True
 
     warnings: list[str] = []
     days_since = None
-    if projects:
+    # max_days_without_chatgpt = 0: Pruefung aus, fuer Rechner ohne ChatGPT.
+    if projects and max_days_without_chatgpt > 0:
         if latest is None:
-            warnings.append("Noch keine ChatGPT-Nachricht archiviert.")
+            # Kommen Claude-Nachrichten an, funktioniert die Kette; dann wird
+            # ChatGPT hier schlicht nicht benutzt.
+            if not other_source:
+                warnings.append("Noch keine ChatGPT-Nachricht archiviert.")
         else:
             days_since = (now.timestamp() - latest) / 86400
             if days_since > max_days_without_chatgpt:

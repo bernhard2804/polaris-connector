@@ -107,6 +107,14 @@ class TestBackupCheck(unittest.TestCase):
         self.assertEqual(self._check([self._snap(0.5)], result="exit-code")["level"], "warn")
 
 
+class TestChatgptArchive(unittest.TestCase):
+    def test_without_chatgpt_message_is_neutral_when_check_is_off(self):
+        with tempfile.TemporaryDirectory() as t:
+            c = sh.check_archive({"a": Path(t)}, 0)
+            self.assertEqual(c["level"], "ok")
+            self.assertIn("noch keine", c["detail"])
+
+
 class TestClaudeArchive(unittest.TestCase):
     def test_levels(self):
         import time

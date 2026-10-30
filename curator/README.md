@@ -213,7 +213,9 @@ Stille Ausfälle (`health.py`): kommt projektübergreifend länger als
 `monitoring.max_days_without_chatgpt` (Default 3) keine ChatGPT-Nachricht an,
 oder bleiben Dateien in der Bridge-Inbox liegen, warnt `status-all`/`run-all`;
 der Timer-Lauf schickt höchstens eine Desktop-Benachrichtigung pro Tag und
-Befund.
+Befund. Wer ChatGPT nicht (mehr) nutzt, schaltet die ChatGPT-Prüfung mit
+`max_days_without_chatgpt: 0` aus. Wurde noch nie eine ChatGPT-Nachricht
+archiviert, aber Claude-Nachrichten kommen an, bleibt sie auch ohne das still.
 
 ## Projektwissens-Transfer zwischen Anbietern (seit 2026-09-25)
 

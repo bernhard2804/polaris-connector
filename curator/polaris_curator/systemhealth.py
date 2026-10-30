@@ -81,6 +81,8 @@ def check_archive(projects: dict, max_days: int) -> dict:
         level = "error" if any("keine ChatGPT-Nachricht" in w for w in h["warnings"]) else "warn"
         return _c("chatgpt-archive", "ChatGPT-Archivierung", level, " ".join(h["warnings"]))
     last = h["last_chatgpt_message_at"]
+    if last is None:
+        return _c("chatgpt-archive", "ChatGPT-Archivierung", "ok", "noch keine ChatGPT-Nachricht archiviert")
     days = _age_days(last, datetime.now(timezone.utc))
     return _c("chatgpt-archive", "ChatGPT-Archivierung", "ok", f"letzte Nachricht {_fmt_age(days)}")
 

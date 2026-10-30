@@ -118,7 +118,7 @@ class CuratorConfig:
     max_images_per_document: int = 5
     max_chars_per_attachment: int = 20000
     # Warnung, wenn projektuebergreifend so viele Tage keine ChatGPT-
-    # Nachricht archiviert wurde (siehe health.py).
+    # Nachricht archiviert wurde (siehe health.py). 0 = Pruefung aus.
     max_days_without_chatgpt: int = 3
     max_days_without_claude: int = 7
     # Verdichtung von knowledge.md (compact.py): automatisch ab dieser Groesse,
