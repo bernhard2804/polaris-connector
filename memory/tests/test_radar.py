@@ -604,3 +604,22 @@ class TestNvdVerdict(unittest.TestCase):
     def test_without_p_evidence_plain_vercmp(self):           # B5
         # Paket ohne pN-Beleg: Verhalten wie vorher (vercmp: 2.0p1 < 2.0)
         self.assertEqual(self.v("2.0p1-1", ("*:*", {"versionEndExcluding": "2.0"})), "betroffen")
+
+
+class TestGitTimeout(unittest.TestCase):
+    """Haengendes git ls-remote (2026-11-16) darf den Lauf nicht abbrechen."""
+
+    def test_timeout_returns_empty(self):
+        r = _load_radar()
+        orig = r.subprocess.run
+
+        def haengt(*a, **k):
+            raise subprocess.TimeoutExpired(a[0], k.get("timeout"))
+        r.subprocess.run = haengt
+        try:
+            self.assertEqual(r.git(Path("/nonexistent"), "ls-remote", "origin", "HEAD"), "")
+            zeilen = r.check_plugins([{"id": "x.plugin", "dir": Path("/nonexistent")}])
+        finally:
+            r.subprocess.run = orig
+        self.assertTrue(any("nicht erreichbar" in z for z in zeilen), zeilen)
+

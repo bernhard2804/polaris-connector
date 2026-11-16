@@ -185,7 +185,12 @@ def installed_plugins() -> list[dict]:
 
 def git(d: Path, *args: str) -> str:
     env = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GIT_SSH_COMMAND": "ssh -oBatchMode=yes"}
-    r = subprocess.run(["git", "-C", str(d), *args], capture_output=True, text=True, timeout=30, env=env)
+    try:
+        r = subprocess.run(["git", "-C", str(d), *args], capture_output=True, text=True, timeout=30, env=env)
+    except (OSError, subprocess.SubprocessError):
+        # Ein haengendes Plugin-Repo (ls-remote > 30 s) soll nur dieses Plugin als
+        # "Upstream nicht erreichbar" melden, nicht den ganzen Lauf abbrechen.
+        return ""
     return r.stdout.strip() if r.returncode == 0 else ""
 
 

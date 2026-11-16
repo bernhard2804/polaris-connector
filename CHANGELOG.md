@@ -8,6 +8,14 @@ verlangen. Einzelheiten stehen in der README.
 
 ## Unveröffentlicht
 
+- **Radar: hängendes Plugin-Repo bricht den Lauf nicht mehr ab** (2026-11-16,
+  Beitrag von bernhard2804): Lief `git ls-remote` eines Plugins in die
+  30-s-Zeitgrenze, beendete `subprocess.TimeoutExpired` den ganzen Radar
+  (Exit 1, Health „systemd-Units fehlgeschlagen“, keine Sicherheitsprüfung an
+  dem Tag). `git()` fängt das jetzt wie die übrigen Aufrufe ab; das Plugin
+  steht dann als „Upstream nicht erreichbar“ in der Liste. Test in
+  `memory/tests/test_radar.py`.
+
 - **Radar: Beiträge in eigenen Repos** (2026-11-14): Mit `own_repos`
   (`owner/repo` oder `owner/*` für alle öffentlichen Repos eines Kontos außer
   Forks) listet der Radar offene Issues und PRs anderer im neuen Abschnitt
